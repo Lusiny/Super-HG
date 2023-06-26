@@ -1,0 +1,14 @@
+{
+  "name": "super-hg",
+  "version": "1.0.0",
+  "description": "Um BOT para Discord, um novo Hunger Games",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "lusiny",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.11.0"
+  }
+}
