@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { Client, GatewayIntentBits, Partials, Collection, PartialGroupDMChannel } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js");
 const { red, magenta } = require("colors");
 const { readdirSync } = require("fs"); 
 
@@ -27,8 +27,14 @@ client.aliases = new Collection();
 
 client.slash = new Collection();
 
+const moment = require("moment");
+const format_setup = require("moment-duration-format");
+
+format_setup(moment);
+moment.locale("pt-br");
+
 (async function() {
-    console.log(`${magenta('[CARREGANDO]')} Carregando os eventos...`)
+    console.log(`${magenta('[CARREGANDO]')} Carregando os eventos...`);
     await Promise.all(readdirSync('./events/').map(event => {
         let file = require(`./events/${event}`);
         let name = event.split(".")[0];
@@ -37,7 +43,7 @@ client.slash = new Collection();
         console.log(` ${magenta(name)} foi carregado com sucesso!`);
     }));
 
-    console.log(`${magenta('[CARREGANDO]')} Carregando os comandos...`)
+    console.log(`${magenta('[CARREGANDO]')} Carregando os comandos...`);
     await Promise.all(readdirSync('./commands/').map(async command => {
         let comando = require(`./commands/${command}`);
         let name = command.split(".")[0];
@@ -61,10 +67,10 @@ client.slash = new Collection();
         let name = command.split(".")[0];
 
         if (!comando.data || comando.data && comando.data.name == undefined) {
-            console.log(` ${red(name)} não pode ser carregado!`)
+            console.log(` ${red(name)} não pode ser carregado!`);
             return;
         }
-        console.log(` ${magenta(name)} foi carregado com sucesso!`)
+        console.log(` ${magenta(name)} foi carregado com sucesso!`);
 
         client.slash.set(name, comando);
     }));

@@ -19,9 +19,22 @@ const Server = new Schema({
 
 const User = new Schema({
     _id: { type: String },
-    user_id: { type: String },
-    server_id: { type: String }
+    user_id: { type: String, required: true },
+    server_id: { type: String, required: true }
 });
+
+const Setup = new Schema({
+    _id: { type: String },
+    name: { type: String, },
+    server_id: { type: String, required: true },
+    players: { type: Array, required: true },
+    creation: {
+        type: new Schema({
+            creator_id: { type: String, required: true },
+            createdAt: { type: Date, default: Date.now }
+        }, { _id: false })
+    }
+})
 
 const Configuration = model('Configuration', Config);
 exports.Configuration = Configuration;
@@ -31,3 +44,6 @@ const Users = model('Users', User);
 
 exports.Servers = Servers;
 exports.Users = Users;
+
+const Setups = model('Setups', Setup);
+exports.Setups = Setups;

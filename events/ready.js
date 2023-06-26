@@ -8,14 +8,14 @@ module.exports = async (client) => {
     const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
 
     (async function () {
-        console.log(`${magenta('[CARREGANDO]')} Carregando os comandos de slash para os servidores...`)
+        console.log(`${magenta('[CARREGANDO]')} Carregando os comandos de slash para os servidores...`);
         try {
             await rest.put(
                 Routes.applicationCommands(CLIENT_ID), {
                     body: Array.from(client.slash.values()).map(command => command.data)
                 },
             );
-            console.log(`${green(" >")} Todos os comandos de slash foram carregados!`)
+            console.log(`${green(" >")} Todos os comandos de slash foram carregados!`);
         } catch (error) {
             if (error) return console.error(`${red(" >")} Não foi possível carregar todos os comandos de slash: `, error);
         }

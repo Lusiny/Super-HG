@@ -5,15 +5,18 @@ const { EmbedBuilder } = require("discord.js");
 module.exports = {
     config: {
         name: 'reload',
+        category: 'owner',
         description: {
             "pt-br": "Use este comando para recarregar todos os comandos.",
             "en-us": "Use this command to reload all the comands."
         },
         aliases: ['rr'],
-        permissions: [],
-        owner: true
+        usage: ['<command>'],
+        example: ['', '<hungergames>', 's'],
+        botPermissions: ['SEND_MESSAGES', 'EMBED_LINKS'],
+        userPermissions: []
     },
-    run: async (client, message, args) => {
+    run: async function (client, message, args) {
         let command = args[0];
         if (command) {
             command = command.toLowerCase();
@@ -25,7 +28,7 @@ module.exports = {
             ]});
 
             await new Promise(async (resolve, reject) => {
-                delete require.cache[require.resolve(`../commands/${getComando.config.name}.js`)]
+                delete require.cache[require.resolve(`../commands/${getComando.config.name}.js`)];
                 const comando = require(`../commands/${getComando.config.name}.js`);
                 
                 client.commands.set(getComando.config.name, comando);

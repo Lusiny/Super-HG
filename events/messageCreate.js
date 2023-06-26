@@ -1,4 +1,3 @@
-const { Types } = require("mongoose");
 const { Servers, Users } = require("../config/database.js");
 
 const { Permissions } = require("discord.js");
@@ -49,7 +48,7 @@ module.exports = async (client, message) => {
           command = args.shift().toLowerCase(),
           comando = client.commands.get(command) || client.aliases.get(command); 
 
-    if (!comando || comando && comando.config.owner && message.author.id != "606553920793346150") return;
+    if (!comando || comando && comando.config.category == "owner" && message.author.id != "606553920793346150") return;
     comando.run(client, message, args);
 
 }
