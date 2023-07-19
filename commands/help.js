@@ -36,7 +36,7 @@ module.exports = {
         command = command.toLowerCase();
 
         const comando = client.commands.get(command) || client.aliases.get(command);
-        if (!comando || comando && comando.config.category == 'owner') return message.reply({ embeds: [ new EmbedBuilder()
+        if (!comando || comando && comando.config.category == 'owner' && message.author.id != "606553920793346150") return message.reply({ embeds: [ new EmbedBuilder()
             .setTitle("COMANDO NÃO ENCONTRADO")
             .setDescription(`O comando ${command} não foi encontrado na minha lista de comandos.`)
             .setColor(process.env.ERROR)
@@ -60,8 +60,9 @@ module.exports = {
                 { name: '\u200B', value: '\u200B', inline: true },
                 { name: 'Permissões do Usuário:', value: `\`\`\`ini\n[ ${(comando.config.userPermissions.length == 0) ? "Nenhuma permissão necessária" : comando.config.userPermissions.join(", ")} ]\`\`\``, inline: true }
             ])
+            .setThumbnail('https://cdn.discordapp.com/attachments/822857448708374568/1128030292003782758/cejm-cavalcade.gif')
             .setFooter({ 'text': "Guia de argumentos: <opcional> [obrigatório]" })
-            .setColor(process.env.SUCCESS)
+            .setColor(process.env.INFO)
         ]});
     }
 }

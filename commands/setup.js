@@ -1,11 +1,10 @@
 const moment = require("moment-timezone");
 moment.tz.setDefault('America/Sao_Paulo');
 
-
 const { EmbedBuilder } = require("discord.js");
 const { BadUsageEmbed } = require("../utils/badusage.js");
 
-const { Setups } = require("../config/database.js");
+const { Users, Setups } = require("../config/database.js");
 
 module.exports = {
     config: {
@@ -56,11 +55,21 @@ module.exports = {
                         continue;
                     }
 
-                    const user = client.users.cache.get(player);
+                    const user = message.guild.members.cache.get(player);
                     if (!user) {
                         if (able_players.length == 24) continue;
                         unable_players.push(player);
                     } else {
+                        let User = await Users.findOne({ _id: `${player}:${message.guild.id}` });
+                        if (!User) {
+                            User = await new Users({
+                                _id: `${player}:${message.guild.id}`,
+                                user_id: player,
+                                server_id: message.guild.id
+                            });
+                            await User.save();
+                        }
+
                         if (able_players.length == 24) continue;
                         able_players.push(player);
                     }

@@ -1,6 +1,6 @@
 const { Servers, Users } = require("../config/database.js");
 
-const { Permissions } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 
 module.exports = async (client, message) => {
     if (message.author.bot) return;
@@ -24,6 +24,19 @@ module.exports = async (client, message) => {
         await User.save();
 
         user = User;
+    }
+
+    if (message.content == "<@1122116698124861510>") {
+        if (message.author.id == "176132496390488065") return message.channel.send("\<:pepeshotgun:1083220573708107848>");
+        return message.reply({ embeds: [ new EmbedBuilder()
+            .setDescription(`O meu prefixo nesse servidor é \`${server.prefix}\` use **${server.prefix}ajuda** para conhecer meus comandos.`)
+            .setColor(process.env.INFO)
+        ]});
+    }
+
+    if (message.content == "perguntei_nada" && message.author.id == "606553920793346150") {
+        message.delete();
+        message.channel.send("https://cdn.discordapp.com/attachments/547889321554739200/1051933128098328636/Screenshot_20221013_140109.png")
     }
 
     if (message.content.indexOf(server.prefix) != 0) return;

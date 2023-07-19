@@ -76,8 +76,13 @@ moment.locale("pt-br");
     }));
 })();
 
+process.on('uncaughtException', err => {
+    console.error(`${red('[ERRO]')} Ocorreu um erro durante a execução do programa: ${err.message}`);
+    console.error(err);
+});
+  
 process.on('unhanunhandledRejection', err => {
-    console.error(`${red('[ERRO]')} Ocorreu um erro durante a execução do programa:`);
+    console.error(`${red('[ERRO]')} Ocorreu um erro durante uma promessa não tratada:`);
     console.error(err);
 });
 
