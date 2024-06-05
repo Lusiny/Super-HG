@@ -1,10 +1,9 @@
 const { createCanvas, loadImage } = require("canvas");
-const { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
+const { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, Embed } = require("discord.js");
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+// Carregar imagens com evento
 async function _loadImage(message, players, text) {
     const canvas = createCanvas(500, 180);
     const ctx = canvas.getContext('2d');
@@ -37,12 +36,53 @@ async function _loadImage(message, players, text) {
 }
 
 async function HungerGames(message, districts, players) {
+    async function getComponents() {
+        const custom_id = `show_next_interaction`;
+
+        const next = new ButtonBuilder();
+        next.setCustomId(custom_id);
+        next.setLabel('Próximo');
+        next.setStyle(ButtonStyle.Success);
+    
+        const components = new ActionRowBuilder();
+        components.addComponents(next);
+
+        return components;
+    }
+
+    async function OneWay(message, players) {
+        await new Promise(async (resolve, reject) => {
+            message.reply({ embeds: [ new EmbedBuilder()
+                .setAuthor({ 'name': message.guild.members.me.user.username, 'iconURL': message.guild.members.me.user.displayAvatarURL({ dynamic: true }) })
+                .setDescription(`A seleção não é **NATURAL**!\n\nOs jogadores serão teletransportados para **biomas aleatoriamente** onde poderão coletar recursos e enfrentar desafios.`)
+                .setImage('attachment://Biomas.png')
+                .setColor(process.env.INFO)
+            ], components: [await getComponents()], files: ['./images/Biomas.png'] })
+            .then(msg => {
+                const collector = message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === message.author.id, max: 1 });
+                collector.on('collect', async interaction => {
+                    collector.stop();
+
+                    await interaction.message.edit({ components: [] });
+
+                    for (let i = 0; i < players.length; i++) {
+                        await new Promise(async (resolve, reject) => {
+
+                        })
+                    }
+
+                    resolve();
+                });
+            });
+        });
+    }
+
     async function Lobby(message, players) {
-        for (let i = 0; i < players.length; i++) {
+        /*for (let i = 0; i < players.length; i++) {
             await new Promise(async (resolve, reject) => {
                 const player = players[i]
                 const biomes = ["Montanha", "Deserto", "Planícies", "Floresta", "Taiga"];
-                player.biome = biomes.sort(() => Math.random() - 0.5)[0];
+                players[i].biome = biomes.sort(() => Math.random() - 0.5)[0];
 
                 const custom_id = `show_next_interaction`;
 
@@ -72,8 +112,7 @@ async function HungerGames(message, districts, players) {
                 });
             });
         }
-
-        return players;
+        return players;*/
     }
 
     let ObjectPlayers = [];
@@ -89,7 +128,10 @@ async function HungerGames(message, districts, players) {
     }));
 
     players = ObjectPlayers;
-    let day = 0, night = false;
+
+    const random = players.sort(() => Math.random() - 0.5);
+    await OneWay(message, random);
+    /*let day = 0, night = false;
 
     // Enquanto tiver mais que um jogador em pé
     while (players.filter(player => player.health > 0).length > 1) {
@@ -105,10 +147,13 @@ async function HungerGames(message, districts, players) {
         }
 
         day = day + 1;
-    };
+    };*/
+
+
 }
 
-async function loadIndividualDistrict(message, district, index) {
+// Função que carrega a imagem dos distritos individualmente
+async function loadImagesDistrict(message, district, index) {
     const canvas = createCanvas(500, 300);
     const ctx = canvas.getContext('2d');
 
@@ -153,6 +198,8 @@ async function loadIndividualDistrict(message, district, index) {
 
     return attachment;
 }
+
+// Função que carrega os distritos individualmente
 async function presentDistricts(message, districts, i) {
     return new Promise(async (resolve, reject) => {
         const custom_id = `show_next_district_${i}`;
@@ -170,7 +217,7 @@ async function presentDistricts(message, districts, i) {
             .setDescription(`Os jogadores do \`Distrito ${i + 1}\` são: **${message.guild.members.cache.get(districts[i][0]).user.username}** e **${message.guild.members.cache.get(districts[i][1]).user.username}**`)
             .setImage('attachment://image.jpg')
             .setColor(process.env.INFO)
-        ], components: [components], files: [await loadIndividualDistrict(message, districts[i], i)] })
+        ], components: [components], files: [await loadImagesDistrict(message, districts[i], i)] })
         .then(msg => {
             const collector = message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === message.author.id, max: 1 });
             collector.on('collect', async interaction => {
@@ -185,6 +232,8 @@ async function presentDistricts(message, districts, i) {
         });
     });
 }
+
+// Função que carrega os distritos todos
 async function loadDistrictMenu(message, groups) {
     const canvas = createCanvas(925, 875);
     const ctx = canvas.getContext('2d');

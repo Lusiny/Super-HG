@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const { BadUsageEmbed } = require("../utils/badusage.js");
 
-const { Servers } = require("../config/database.js");
+const { Servers, Setups } = require("../config/database.js");
 
 module.exports = {
     config: {

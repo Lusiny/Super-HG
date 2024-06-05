@@ -3,6 +3,8 @@ const { Servers, Users } = require("../config/database.js");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = async (client, message) => {
+    // if (message.author.id == "725525536478068788") message.delete();
+    
     if (message.author.bot) return;
     if (!message.guild.members.me.permissions.has(["SEND_MESSAGES", "EMBED_LINKS", "ADD_REACTIONS"])) return;
 

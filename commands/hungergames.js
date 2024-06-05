@@ -9,7 +9,7 @@ const { loadDistrictMenu, presentDistricts, HungerGames } = require("../utils/hu
 module.exports = {
     config: {
         name: 'hungergames',
-        category: 'owner',
+        category: 'hungergames',
         description: {
             "pt-br": "Use este comando para criar um novo hungergames.",
             "en-us": "Use this command to create a new hungergames."
@@ -69,7 +69,7 @@ module.exports = {
                 }
             }
 
-            if (players.length < 24) {
+            if (players.length < 24 && players.length != 0) {
                 message.reply({ embeds: [ new EmbedBuilder()
                     .setAuthor({ 'name': client.user.username, 'iconURL': client.user.displayAvatarURL({ dynamic: true }) })
                     .setDescription(`O número de pessoas válidas para jogar o Super HG não é válido, serão adicionadas novas pessoas.`)
@@ -156,8 +156,8 @@ module.exports = {
                         collector.on('collect', async interaction => {
                         collector.stop();
 
-                        await interaction.message.edit({ components: [] });
-                            await HungerGames(message, districts, players);
+                         await interaction.message.edit({ components: [] });
+                         await HungerGames(message, districts, players);
                         });
                     });
                 });

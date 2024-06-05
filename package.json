@@ -1,7 +1,7 @@
 {
   "name": "super-hg",
-  "version": "1.0.0",
-  "description": "Um BOT para Discord, um novo Hunger Games",
+  "version": "1.0.1",
+  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,13 +9,14 @@
   "author": "lusiny",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.6.2",
     "canvas": "^2.11.2",
-    "discord.js": "^14.11.0",
-    "jimp": "^0.22.8",
+    "colors": "^1.4.0",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.3.1",
     "moment": "^2.29.4",
     "moment-duration-format": "^2.3.2",
     "moment-timezone": "^0.5.43",
-    "node-fetch": "^3.3.1"
+    "mongoose": "^8.0.2"
   }
 }
