@@ -1,306 +1,102 @@
-const { createCanvas, loadImage } = require("canvas");
-const { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, Embed } = require("discord.js");
+const { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
+const { displayDistrict } = require("../utils/display.js"); 
 
-function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+class HungerGames {
+    constructor(message, players) {
+        this.message = message;
+        this.players = players.sort(() => Math.random() - 0.5); // Os jogadores são movidos de forma aleatória na array
 
-// Carregar imagens com evento
-async function _loadImage(message, players, text) {
-    const canvas = createCanvas(500, 180);
-    const ctx = canvas.getContext('2d');
+        const self = this;
+        this.players = players.map((player, i) => { // E posteriormente são transformados em objetos com mais propriedades
+            return {
+                id: player,
+                get user () {
+                    return self.message.guild.members.cache.get(this.id).user;
+                },
+                get username () {
+                    return this.user.username;
+                },
+                get avatar () { // Usamos um Getter para que ele possa utilizar os items do próprio objeto uma vez que necessário pós carregamento
+                    return this.user.displayAvatarURL({ dynamic: true, size: 512 })
+                },
+                district: Math.ceil((i + 1) / 2), // Define o distrito
+                biome: '', // Por definir
+                hp: 100, // Eventos podem causar hit kill, ou deixar o jogador à beira da morte.
+                items: [], // Array com os items de cada jogador, os items influenciam diretamente os eventos
+                armor: [], // Array de objetos com nome dos items, durabilidade e proteção oferecida
+                effects: [], // Array de strings com efeitos do jogador
+                // group: [], // Formar grupo com jogadores de outros distritos
+                sex: 0, // Quantas vezes o jogador fez o dale e tome-le
+                kills: 0, // Número de kills do jogador
 
-    const background = await loadImage('./images/Fundo50Blur500x300.png');
-    ctx.drawImage(background, 0, 0, 500, 180);
-
-    ctx.font = '20px Arial';
-    ctx.fillStyle = "#ffffff";
-
-    let preview = ctx.measureText(text);
-    let width = preview.width;
-
-    ctx.fillText(text, 250 - (width / 2), 155);
-    await Promise.all(players.map(async (player, i) => {
-        const imageURL = message.guild.members.cache.get(player.id).user.displayAvatarURL().replace(".webp", ".jpeg");
-        const image = await loadImage(imageURL);
-
-        const xPrincipalCentral = 500 / 2 - (80 * players.length + 20 * (players.length - 1)) / 2 
-        const x = xPrincipalCentral + 100 * i
-              y = 30;
-
-        ctx.drawImage(image, x, y, 80, 80);
-    }));
-
-    const buffer = canvas.toBuffer('image/jpeg');
-    const attachment = new AttachmentBuilder(buffer, { 'name': 'image.jpg' });
-
-    return attachment;
-}
-
-async function HungerGames(message, districts, players) {
-    async function getComponents() {
-        const custom_id = `show_next_interaction`;
-
-        const next = new ButtonBuilder();
-        next.setCustomId(custom_id);
-        next.setLabel('Próximo');
-        next.setStyle(ButtonStyle.Success);
-    
-        const components = new ActionRowBuilder();
-        components.addComponents(next);
-
-        return components;
-    }
-
-    async function OneWay(message, players) {
-        await new Promise(async (resolve, reject) => {
-            message.reply({ embeds: [ new EmbedBuilder()
-                .setAuthor({ 'name': message.guild.members.me.user.username, 'iconURL': message.guild.members.me.user.displayAvatarURL({ dynamic: true }) })
-                .setDescription(`A seleção não é **NATURAL**!\n\nOs jogadores serão teletransportados para **biomas aleatoriamente** onde poderão coletar recursos e enfrentar desafios.`)
-                .setImage('attachment://Biomas.png')
-                .setColor(process.env.INFO)
-            ], components: [await getComponents()], files: ['./images/Biomas.png'] })
-            .then(msg => {
-                const collector = message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === message.author.id, max: 1 });
-                collector.on('collect', async interaction => {
-                    collector.stop();
-
-                    await interaction.message.edit({ components: [] });
-
-                    for (let i = 0; i < players.length; i++) {
-                        await new Promise(async (resolve, reject) => {
-
-                        })
-                    }
-
-                    resolve();
-                });
-            });
+                ressurected: false // Ativo apenas para a facção dos Deuses
+            };
         });
+
+        this.bosses = [
+            {
+                'Metal e Core': { isAlive: true }, 
+                'Dan c\'Ifre': { isAlive: true },
+                'Invís': { isAlive: true },
+                'Zarch': { isAlive: true },
+                'Coloba': { isAlive: true }
+            }
+        ];
+
+        this.factions = [
+            "Favela", // Membros do distrito recebem bônus para roubar outros jogadores
+            "Burguesia", // Membros do distrito recebem bônus para patrocinadores
+            "Cultista", // Membros do distrito recebem bônus de dano explosivo e chance de pegar bombas
+            "Amazonas", // Membros do distrito não morreram escalando árvores e, se em Floresta recebem mais chance de achar items
+            "Noias", // Membros do distrito não sofreram para qualquer tipo de envenenamento
+            "Assassinos", // Membros do distrito teram buffs massivos de noite, se não tiverem arma suas chances de morreram duplicam
+            "Fudidos", // Membros do distrito tomam debuff na coleta de items, dão menos dano e tem mais eventos azarados, mas levam menos dano
+            "Sumidos", // Membros do distrito têm chance de fugir de eventos e boss fights,
+            "Deuses", // Membros do distrito podem ressuscitar apenas uma vez o companheiro morto,
+            "BOTs", // Membros do distrito não podem morrer de fome ou sede, e não sofrem com certos efeitos, entretanto não podem usar os items que pegam
+            "Águias", // Membros do distrito de águias tem chance de critar de 100% usando Arco e Flecha
+            "Dedadas", // Membros do distrito têm uma chance de 1%, todas as rodadas, de matar todos os jogadores.
+
+            // Futuras facções novas por vir 
+        ].sort(() => Math.random() - 0.5);
     }
+    
+    // Mostrar cada Distrito
+    async showEachDistrict() {
+        let self = this;
 
-    async function Lobby(message, players) {
-        /*for (let i = 0; i < players.length; i++) {
-            await new Promise(async (resolve, reject) => {
-                const player = players[i]
-                const biomes = ["Montanha", "Deserto", "Planícies", "Floresta", "Taiga"];
-                players[i].biome = biomes.sort(() => Math.random() - 0.5)[0];
+        // Cria uma array com 12 casas, preenche-as e substitui o seu conteúdo de cada casa com uma array de conteúdos entre o intervalo i*2 e i*2 + 2
+        const districts = Array(12).fill().map((_, i) => self.players.slice(i*2, i*2 + 2));
 
-                const custom_id = `show_next_interaction`;
+        for (var i = 0; i < districts.length; i++) {
+            await new Promise(async function (resolve, reject) {
+                // Variável para guardar o distrito
+                const district = districts[i];
+                const [player1, player2] = [district[0], district[1]];
 
-                const next = new ButtonBuilder();
-                next.setCustomId(custom_id);
-                next.setLabel('Próximo');
-                next.setStyle(ButtonStyle.Success);
-            
+                const builder = new ButtonBuilder();
+                builder.setCustomId(`show_district${i + 1}`);
+                builder.setLabel('Próximo Distrito');
+                builder.setStyle(ButtonStyle.Success);
+
                 const components = new ActionRowBuilder();
-                components.addComponents(next);
-        
-                const text = `${message.guild.members.cache.get(player.id).user.username} foi para o bioma de ${player.biome}.`;
+                components.addComponents(builder);
 
-                message.reply({ embeds: [  new EmbedBuilder() 
-                    .setAuthor({ 'name': message.guild.members.me.user.username, 'iconURL': message.guild.members.me.user.displayAvatarURL({ dynamic: true }) })
-                    .setImage('attachment://image.jpg')
-                    .setColor(process.env.INFO)
-                ], components: [components], files: [await _loadImage(message, [player], text)] })
-                .then(msg => {
-                    const collector = message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === message.author.id, max: 1 });
+                self.message.channel.send({
+                    content: `**Distrito ${i + 1}**\n<@${player1.id}> e <@${player2.id}>`, 
+                    files: [await displayDistrict(self.factions[i], i + 1, [player1, player2])],
+                    components: [components], // NOTA.: Adicionar botão para descobrir o que a facção tem de especial.
+                })
+                .then(async msg => {
+                    const collector = self.message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === self.message.author.id && response.message.id == msg.id, max: 1 });
                     collector.on('collect', async interaction => {
-                        collector.stop();
-        
-                        await interaction.message.edit({ components: [] });
-                        resolve();
+                        await msg.edit({ components: [] });
+                        return resolve();
                     });
                 });
             });
-        }
-        return players;*/
+        } 
     }
-
-    let ObjectPlayers = [];
-    await Promise.all(players.map(player => {
-        ObjectPlayers.push({
-            id: player,
-            district: districts.findIndex(players => players.includes(player)) + 1,
-            health: 100,
-            biome: "Centro",
-            items: [],
-            effects: []
-        });
-    }));
-
-    players = ObjectPlayers;
-
-    const random = players.sort(() => Math.random() - 0.5);
-    await OneWay(message, random);
-    /*let day = 0, night = false;
-
-    // Enquanto tiver mais que um jogador em pé
-    while (players.filter(player => player.health > 0).length > 1) {
-        const random = players.sort(() => Math.random() - 0.5);
-        if (day == 0) {
-            players = await Lobby(message, random);
-        } else {
-            if (!night) {
-                let chance = Math.floor(Math.random() * 101);
-            } else {
-                night = !night;
-            }
-        }
-
-        day = day + 1;
-    };*/
-
-
 }
 
-// Função que carrega a imagem dos distritos individualmente
-async function loadImagesDistrict(message, district, index) {
-    const canvas = createCanvas(500, 300);
-    const ctx = canvas.getContext('2d');
-
-    const background = await loadImage('./images/Fundo50Blur500x300.png');
-    ctx.drawImage(background, 0, 0, 500, 333);
-
-    ctx.font = '25px Arial';
-    ctx.fillStyle = "#ffffff";
-
-    let preview = ctx.measureText(`Distrito ${index + 1}`);
-    let width = preview.width;
-
-    ctx.fillText(`Distrito ${index + 1}`, 250 - (width / 2), 30);
-    await Promise.all(district.map(async (player, i) => {
-        const imageURL = message.guild.members.cache.get(player).user.displayAvatarURL().replace(".webp", ".jpeg");
-        const image = await loadImage(imageURL);
-
-        const x = 40 * (i + 1) + 180 * i,
-              y = 50;
-
-        ctx.drawImage(image, x, y, 180, 180);
-
-        const username = message.guild.members.cache.get(player).user.username;
-        ctx.font = '24px Arial';
-        ctx.fillStyle = "#ffffff";
-
-        preview = ctx.measureText(username);
-        width = preview.width;
-
-        if (width > 180) {
-            ctx.font = "20px Arial";
-            preview = ctx.measureText(username);
-            width = preview.width;
-        }
-
-        xCentralizado = (x + x + 180) / 2 - width / 2;
-        ctx.fillText(username, xCentralizado, y + 220);
-    }));
-
-    const buffer = canvas.toBuffer('image/jpeg');
-    const attachment = new AttachmentBuilder(buffer, { 'name': 'image.jpg' });
-
-    return attachment;
-}
-
-// Função que carrega os distritos individualmente
-async function presentDistricts(message, districts, i) {
-    return new Promise(async (resolve, reject) => {
-        const custom_id = `show_next_district_${i}`;
-
-        const next = new ButtonBuilder();
-        next.setCustomId(custom_id);
-        next.setLabel('Próximo Distrito');
-        next.setStyle(ButtonStyle.Success);
-    
-        const components = new ActionRowBuilder();
-        components.addComponents(next);
-
-        message.reply({ content: `Membros do Distrito ${i + 1}: <@ ${districts[i][0]}> e <@ ${districts[i][1]}>`, embeds: [  new EmbedBuilder() 
-            .setAuthor({ 'name': message.guild.members.me.user.username, 'iconURL': message.guild.members.me.user.displayAvatarURL({ dynamic: true }) })
-            .setDescription(`Os jogadores do \`Distrito ${i + 1}\` são: **${message.guild.members.cache.get(districts[i][0]).user.username}** e **${message.guild.members.cache.get(districts[i][1]).user.username}**`)
-            .setImage('attachment://image.jpg')
-            .setColor(process.env.INFO)
-        ], components: [components], files: [await loadImagesDistrict(message, districts[i], i)] })
-        .then(msg => {
-            const collector = message.channel.createMessageComponentCollector({ filter: (response) => response.user.id === message.author.id, max: 1 });
-            collector.on('collect', async interaction => {
-                collector.stop();
-
-                await interaction.message.edit({ components: [] });
-                if (i == 11) return resolve();
-
-                await presentDistricts(message, districts, i + 1);
-                resolve();
-            });
-        });
-    });
-}
-
-// Função que carrega os distritos todos
-async function loadDistrictMenu(message, groups) {
-    const canvas = createCanvas(925, 875);
-    const ctx = canvas.getContext('2d');
-
-    const background = await loadImage('./images/Fundo50Blur.png');
-    ctx.drawImage(background, 0, 0, 925, 875);
-
-    await groups.reduce(async (previousPromise, group, i) => {
-        await previousPromise;
-
-        return group.reduce(async (prev, district, j) => {
-            let x = 30 + j * 300,
-                y = 45 + (i * 210);
-
-            const title = `Distrito ${j + 1 + i * 3}`;
-            ctx.font = '20px Arial';
-            ctx.fillStyle = "#ffffff";
-
-            preview = ctx.measureText(title);
-            width = preview.width;
-
-            if (width > 300) {
-                ctx.font = "16px Arial";
-                preview = ctx.measureText(title);
-                width = preview.width;
-            }
-
-            xCentralizado = (x + x + 274) / 2 - width / 2;
-            ctx.fillText(title, xCentralizado, y - 10);
-
-            await prev;
-            return district.reduce(async (p, player, k) => {
-                await p;
-
-                const x = 30 + (k * 144) + j * 300;
-                const y = 45 + (i * 210);
-
-                const imageURL = message.guild.members.cache.get(player).user.displayAvatarURL().replace(".webp", ".jpeg");
-                const image = await loadImage(imageURL);
-                ctx.drawImage(image, x, y, 130, 130);
-
-                const username = message.guild.members.cache.get(player).user.username;
-                ctx.font = '20px Arial';
-                ctx.fillStyle = "#ffffff";
-
-                preview = ctx.measureText(username);
-                width = preview.width;
-
-                if (width > 130) {
-                    ctx.font = "16px Arial";
-                    preview = ctx.measureText(username);
-                    width = preview.width;
-                }
-
-                xCentralizado = (x + x + 130) / 2 - width / 2;
-                ctx.fillText(username, xCentralizado, y + 160);
-            }, Promise.resolve());
-        }, Promise.resolve());
-    }, Promise.resolve());
-
-    const buffer = canvas.toBuffer('image/jpeg');
-    const attachment = new AttachmentBuilder(buffer, { 'name': 'image.jpg' });
-
-    return attachment; 
-}
-
-exports.delay = delay;
-exports.presentDistricts = presentDistricts;
-exports.loadDistrictMenu = loadDistrictMenu;
 exports.HungerGames = HungerGames;

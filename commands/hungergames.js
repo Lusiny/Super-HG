@@ -1,10 +1,10 @@
-const { yellow } = require("colors");
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ActionRow } = require("discord.js");
-const axios = require('axios');
+//const { yellow } = require("colors");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ActionRow, Attachment } = require("discord.js");
+//const axios = require('axios');
 
 const { Users, Servers, Setups } = require("../config/database.js");
 const { BadUsageEmbed } = require("../utils/badusage.js");
-const { loadDistrictMenu, presentDistricts, HungerGames } = require("../utils/hungergames.js");
+const { HungerGames } = require("../utils/hungergames.js");
 
 module.exports = {
     config: {
@@ -21,23 +21,28 @@ module.exports = {
         userPermissions: []
     },
     run: async function (client, message, args) {
+        // Carrega a embed de uso errado docomando
         const badusage = await BadUsageEmbed(message);
 
+        // Capta o primeiro argumento
         let option = args[0];
         if (!option || option && option.toLowerCase() != "create") return message.reply(badusage);
 
         option = option.toLowerCase();
         if (option == "create") {
+            // Caminho para criar um novo HG, capta o segundo argumento 
             let type = args[1];
             if (!type || type && type.toLowerCase() != "setup" && type.toLowerCase() != "normal") return message.reply(badusage);
 
             let players = [];
             type = type.toLowerCase();
 
+            // Usa um setup de jogadores pre-definidos
             if (type == "setup") {
                 let name = args[2];
                 if (!name) return message.reply(badusage);
 
+                // Procura por um setup com X nome daquele servidor
                 const setup = await Setups.findOne({ _id: `${name}:${message.guild.id}` });
                 if (!setup) return message.reply({ embeds: [ new EmbedBuilder()
                     .setAuthor({ 'name': client.user.username, 'iconURL': client.user.displayAvatarURL({ dynamic: true }) })
@@ -45,15 +50,21 @@ module.exports = {
                     .setColor(process.env.ERROR)
                 ]});
 
+                // Existindo o setup guarda os jogadores na variávle players
                 players = setup.players.filter(player => message.guild.members.cache.get(player));
             } else {
+                // Remove os dois argumentos anteriores
                 args = args.slice(2);
                 for (let arg of args) {
+                    // Para cada argumento restante se for menção removemos os extras ficando apenas o ID
                     player = arg.replace(/<@(\d+)>/,'$1');
 
+                    // Se tiver mais de 24 jogadores cancela
                     if (players.length == 24) break;
+
                     const user = message.guild.members.cache.get(player);
                     if (user) {
+                        // Existindo o utilizador no servidor, verificamos se já está na base de dados
                         let User = await Users.findOne({ _id: `${player}:${message.guild.id}` });
                         if (!User) {
                             User = await new Users({
@@ -65,11 +76,13 @@ module.exports = {
                         }
                     }
 
+                    // Se o jogador não estiver na lista é adicionado
                     if (!players.includes(player)) players.push(player);
                 }
             }
 
-            if (players.length < 24 && players.length != 0) {
+            // Caso faltem jogadores para completar os 24
+            if (players.length < 24) {
                 message.reply({ embeds: [ new EmbedBuilder()
                     .setAuthor({ 'name': client.user.username, 'iconURL': client.user.displayAvatarURL({ dynamic: true }) })
                     .setDescription(`O número de pessoas válidas para jogar o Super HG não é válido, serão adicionadas novas pessoas.`)
@@ -77,14 +90,19 @@ module.exports = {
                     .setColor(process.env.LOADING)
                 ]});
 
+                // Dá fetch a todos os membros do servidor que não sejam bots
                 let members = await message.guild.members.fetch();
                 members = members.filter(member => !member.user.bot);
 
+                // Criamos uma variável para no caso de não ter membros suficientes no servidor os jogadores possam ser repetidos.
                 let repeat = false;
                 if (members.size < 24) repeat = true;
 
                 for (let i = 0; players.length + 1 <= 24; i++) {
+                    // Escolhe um membro de forma aleatória
                     member = members.random();
+
+                    // Caso o servidor tenha mais de 24 membros não vai aceitar membros repetidos e vai procurar por outro
                     if (!repeat) {
                         while (players.includes(member.user.id)) {
                             member = members.random();
@@ -93,6 +111,8 @@ module.exports = {
                     
                     const user = message.guild.members.cache.get(member.user.id);
                     if (user) {
+                        // Novamente verificamos se já está inserido na base de dados, caso não esteja é inserido
+
                         let User = await Users.findOne({ _id: `${member.user.id}:${message.guild.id}` });
                         if (!User) {
                             User = await new Users({
@@ -107,59 +127,31 @@ module.exports = {
                     }
                 }
             }
-
-            players = players.sort(() => Math.random() - 0.5);
             
-            const districts = Array(Math.ceil(players.length / 2)).fill().map((_, i) => players.slice(i * 2, i * 2 + 2));
-            const groups = Array(Math.ceil(districts.length / 3)).fill().map((_, i) => districts.slice(i * 3, i * 3 + 3));            
+            // Botão de Start
+            const start = new ButtonBuilder()
+            start.setCustomId('start_button');
+            start.setLabel('Que começem os jogos!');
+            start.setStyle(ButtonStyle.Success);
 
-            let start = new ButtonBuilder();
-			start.setCustomId('main_menu');
-			start.setLabel('Começar');
-			start.setStyle(ButtonStyle.Primary);
+            // Adicionamos o Botão ao ActionRow
+            const components = new ActionRowBuilder();
+            components.addComponents(start);
 
-            let components = new ActionRowBuilder();
-			components.addComponents(start);
-
-            message.reply({ embeds: [ new EmbedBuilder()
-                .setAuthor({ 'name': client.user.username, 'iconURL': client.user.displayAvatarURL({ dynamic: true }) })
-                .setDescription(`**Que comecem os jogos!**\nEstá começando mais uma edição do Super HG.`)
-                .setImage('attachment://Fundo.png')
-                .setThumbnail('attachment://Vazio.png')
-                .setColor(process.env.INFO)
-                .setFooter({ 'text': 'Nota: O sistema encontra-se em desenvolvimento, caso encontre um erro reporte.'})
-            ], files: ['./images/Fundo.png', './images/Vazio.png'], components: [components] })
+            // Mensagem para começar o HG
+            message.channel.send({
+                content: '**Que comecem os jogos!**\nEstá começando mais uma edição do Super HG.',
+                files: ['images/Fundo.png'],
+                components: [components] })
             .then(async msg => {
-                let collector = msg.createMessageComponentCollector({ filter: (response) => response.user.id == message.author.id, max: 1 });
+                const collector = msg.createMessageComponentCollector({ filter: (response) => response.user.id == message.author.id && response.message.id == msg.id, max: 1 });
+
+                // Quando quem usou o comando interagir com o botão
                 collector.on('collect', async interaction => {
-                    collector.stop();
-
-                    await interaction.message.edit({ components: [] });
-                    await presentDistricts(message, districts, 0)
-
-                    let next = new ButtonBuilder();
-                    next.setCustomId('next');
-                    next.setLabel('Próximo');
-                    next.setStyle(ButtonStyle.Success);
-
-                    let components = new ActionRowBuilder();
-                    components.addComponents(next);
-
-                    message.reply({ embeds: [ new EmbedBuilder()
-                        .setAuthor({ 'name': client.user.username, 'iconURL': client.user.displayAvatarURL({ dynamic: true }) })
-                        .setDescription(`**Que comecem os jogos!**\nEstes são os jogadores dessa edição e os seus distritos.`)
-                        .setImage('attachment://image.jpg')
-                        .setColor(process.env.INFO)
-                    ], files: [await loadDistrictMenu(message, groups)], components: [components] })
-                    .then(async msg => {
-                        let collector = msg.createMessageComponentCollector({ filter: (response) => response.user.id == message.author.id, max: 1 });
-                        collector.on('collect', async interaction => {
-                        collector.stop();
-
-                         await interaction.message.edit({ components: [] });
-                         await HungerGames(message, districts, players);
-                        });
-                    });
+                    await msg.edit({ components:[] }); // Remove a botão
+                    
+                    const HG = await new HungerGames(message, players);
+                    HG.showEachDistrict();
                 });
             });
         }
